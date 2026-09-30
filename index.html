@@ -170,6 +170,27 @@ input[type=range]{padding:0;background:transparent;accent-color:var(--green);hei
 .opt.right{border-color:var(--green);background:var(--green-soft)}
 .opt.wrong{border-color:var(--rose);background:var(--rose-soft)}
 .score{display:flex;justify-content:center;gap:18px;font-size:14px;color:var(--muted);margin-top:10px}
+.seg3{grid-template-columns:repeat(3,1fr)}
+.scope{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-weight:500;margin-bottom:12px}
+.qmeta{display:flex;justify-content:center}
+.qtype{font-size:12px;color:var(--faint)}
+.qcard .ask.small{font-size:22px}
+.qcard .blank{color:var(--faint);letter-spacing:.1em}
+.qwhy{font-size:13px;color:var(--green);margin-top:4px}
+.qtype{display:none}
+.qimg{margin:4px 0 0;display:grid;gap:4px}
+.qimg img{width:100%;max-height:300px;aspect-ratio:4/3;object-fit:cover;border-radius:14px;background:var(--fill);display:block}
+.qimg figcaption{font-size:11px;color:var(--faint);text-align:left;overflow-wrap:anywhere}
+.qimg figcaption a{color:inherit}
+.write{display:grid;gap:8px;margin-top:14px}
+.write input{font-size:20px;padding:14px 16px;background:var(--card)}
+.fb{margin-top:12px;display:grid;gap:8px}
+.fbh{font-weight:600;font-size:18px}
+.fbh.ok{color:var(--green)} .fbh.no{color:var(--rose)}
+.fbn{font-size:17px}
+.pick-list button[aria-pressed="true"]{background:var(--green-soft)}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:var(--green);font-weight:700;flex:none}
+button[aria-pressed="true"] .check{border-color:var(--green);background:var(--card)}
 /* tabbar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
 .tabbar .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
@@ -274,17 +295,28 @@ input[type=range]{padding:0;background:transparent;accent-color:var(--green);hei
 
   <!-- FÖRHÖR -->
   <section id="v-forhor" hidden>
-    <div class="topbar"><h1>Förhör</h1></div>
-    <div class="seg" role="group" aria-label="Riktning">
-      <button id="q-sv" aria-pressed="true">Svenska → latin</button>
-      <button id="q-lat" aria-pressed="false">Latin → svenska</button>
+    <div class="topbar"><h1>Förhör</h1>
+      <button class="icon-btn" id="q-prog" aria-label="Framsteg"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
     </div>
+    <div class="seg seg3" role="group" aria-label="Nivå" id="q-level">
+      <button data-l="easy" aria-pressed="true">Lätt</button>
+      <button data-l="hard" aria-pressed="false">Svår</button>
+      <button data-l="write" aria-pressed="false">Skriv</button>
+    </div>
+    <button class="scope" id="q-scope">Alla blommor</button>
     <div class="qcard">
-      <div class="label" id="q-lbl">Vad heter den botaniskt?</div>
+      <div class="qmeta"><span class="label" id="q-lbl"></span><span class="qtype" id="q-type"></span></div>
+      <div id="q-media"></div>
       <div class="ask" id="q-ask"></div>
       <div class="hint" id="q-extra"></div>
+      <div class="qwhy" id="q-why"></div>
     </div>
     <div class="opts" id="q-opts"></div>
+    <div class="write" id="q-write" hidden>
+      <input id="q-in" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Ditt svar">
+      <div class="btnrow"><button class="btn soft" id="q-skip">Vet inte</button><button class="btn" id="q-submit">Svara</button></div>
+    </div>
+    <div class="card fb" id="q-fb" hidden></div>
     <button class="btn" id="q-next" style="margin-top:12px" hidden>Nästa</button>
     <div class="score"><span>Rätt <b id="q-r">0</b></span><span>Fel <b id="q-w">0</b></span><span>I rad <b id="q-s">0</b></span></div>
   </section>
@@ -671,8 +703,11 @@ function openFlower(id){
   const f=getF(id),c=calc(f);
   openSheet(`<div class="head"><div><h2>${esc(f.sv)}</h2><div style="font-size:18px">${botan(f)}</div></div><button class="link" data-close>Stäng</button></div>
   <div class="stack">
+    <div id="fl-img"></div>
     <div class="card"><dl class="kv">
       <dt>Familj</dt><dd>${esc(f.fam)}</dd>
+      ${f.acc?"":`<dt>Säsong</dt><dd>${seasonLabel(f.id)}</dd>`}
+      ${DRY.has(f.id)?`<dt>Torkbar</dt><dd>Ja – håller form och färg torkad</dd>`:""}
       ${f.vase&&f.vase!=="–"?`<dt>I vas</dt><dd>${esc(f.vase)} dagar</dd>`:""}
       ${f.acc?"":`<dt>Åldras</dt><dd><span class="p${f.prof}">●</span> ${PROF[f.prof].long}</dd>`}
       <dt>Inpris</dt><dd>${+f.inpris>0?kr(f.inpris,2)+" kr (ditt)":(refOf(f)?"ca "+kr(refOf(f).v,refOf(f).v%1?1:0)+" kr (riktpris)":"<span class='hint'>ej ifyllt</span>")}</dd>
@@ -683,6 +718,7 @@ function openFlower(id){
     <div class="btnrow"><button class="btn soft" id="fl-edit">Redigera</button><button class="btn" id="fl-calc">Räkna på den</button></div>
   </div>`);
   $("#fl-edit").addEventListener("click",()=>openEdit(f));
+  const slot=$("#fl-img"); if(slot){const r=IMG[f.id]&&IMG[f.id].src?IMG[f.id]:null; if(r)slot.innerHTML=figure(r); else getImg(f).then(r=>{const el=$("#fl-img");if(el&&r)el.innerHTML=figure(r);});}
   $("#fl-calc").addEventListener("click",()=>{closeSheet();S.fid=f.id;S.mode="en";save();switchTab("kalkyl");});
 }
 function openEdit(f){
@@ -758,8 +794,8 @@ $("#b-saved").addEventListener("click",openSaved);
 const APPKEY="sofias-blomkalkyl";
 function exportData(){
   return {app:APPKEY,version:1,exported:new Date().toISOString(),
-    blommor:Object.fromEntries(overrides),buketter:saved,
-    installningar:{faktor:S.faktor,moms:S.moms,arbete:S.arbete,round:S.round,start:S.start,fast:S.fast,bukett:S.bukett}};
+    blommor:Object.fromEntries(overrides),buketter:saved,forhor:QS,
+    installningar:{faktor:S.faktor,moms:S.moms,arbete:S.arbete,round:S.round,start:S.start,fast:S.fast,bukett:S.bukett,week:S.week||[],useWeek:!!S.useWeek,qlevel:S.qlevel||"easy"}};
 }
 function fileName(){const d=new Date();const p=n=>String(n).padStart(2,"0");return `blomkalkyl-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.json`;}
 function markExported(){store("bk2-exported",Date.now());updateBanner();}
@@ -795,11 +831,11 @@ function askImport(d){
     <div class="hint" style="margin-top:-4px">Allt som finns här nu tas bort och byts mot filens innehåll.</div>
   </div>`);
   const apply=mode=>{
-    if(mode==="replace"){overrides=new Map(Object.entries(d.blommor));saved=d.buketter.slice();if(d.installningar&&typeof d.installningar==="object"){Object.assign(S,d.installningar);}}
-    else{for(const [k,v] of Object.entries(d.blommor))overrides.set(k,v);const ids=new Set(saved.map(x=>x.id));d.buketter.forEach(b=>{if(b&&!ids.has(b.id))saved.push(b);});saved.sort((a,b)=>(b.ts||0)-(a.ts||0));}
+    if(mode==="replace"){overrides=new Map(Object.entries(d.blommor));saved=d.buketter.slice();if(d.installningar&&typeof d.installningar==="object"){Object.assign(S,d.installningar);}QS=(d.forhor&&typeof d.forhor==="object")?d.forhor:{};}
+    else{for(const [k,v] of Object.entries(d.blommor))overrides.set(k,v);const ids=new Set(saved.map(x=>x.id));d.buketter.forEach(b=>{if(b&&!ids.has(b.id))saved.push(b);});saved.sort((a,b)=>(b.ts||0)-(a.ts||0));if(d.forhor&&typeof d.forhor==="object")for(const [k,v] of Object.entries(d.forhor)){if(!QS[k]||(v&&v.n>QS[k].n))QS[k]=v;}}
     if(!S.bukett||!Array.isArray(S.bukett.rows))S.bukett={name:"Bukett",rows:[]};
     S.bukett.rows.forEach(r=>r.antal=Math.max(1,Math.round(r.antal)));
-    store("bk2-ov",Object.fromEntries(overrides));store("bk2-saved",saved);save();
+    store("bk2-ov",Object.fromEntries(overrides));store("bk2-saved",saved);store("bk2-quiz",QS);save();
     const now=Date.now();store("bk2-changed",now);store("bk2-exported",now);
     rebuildLib();closeSheet();rerender();updateBanner();toast(mode==="replace"?"Allt ersatt":"Ihopslaget");
   };
@@ -838,36 +874,291 @@ function homeScreenCard(){
   return `<div class="card stack" style="gap:8px"><div class="label">Lägg till på hemskärmen</div><p class="sentence" style="margin:0">${how}</p>${installEvt?`<button class="btn" id="inst">Installera</button>`:""}</div>`;
 }
 
-/* ---------- quiz ---------- */
-let Q={dir:"sv",r:0,w:0,s:0,cur:null,done:false};
-function newQ(){
-  const pool=LIB.filter(f=>f.genus&&f.genus!=="–"&&f.species);
-  const ans=pool[Math.floor(Math.random()*pool.length)];
-  const key=f=>Q.dir==="sv"?plainBot(f):f.sv;
-  const opts=[ans];const seen=new Set([key(ans)]);
-  while(opts.length<4&&opts.length<pool.length){const x=pool[Math.floor(Math.random()*pool.length)];if(!seen.has(key(x))){seen.add(key(x));opts.push(x);}}
-  opts.sort(()=>Math.random()-.5);
-  Q.cur={ans,opts};Q.done=false;renderQ();
+/* ---------- säsong, högtider, torkbarhet ---------- */
+const SEASON={solros:"7-9",sommaraster:"7-10",stormhatt:"6-9",stjärnflocka:"6-9",dahlia:"7-10",bolltistel:"7-10",tulpan:"12-4",pion:"5-6",ranunkel:"1-4",anemon:"11-4",
+  lavendel:"6-8",fackellilja:"7-9",montbretia:"7-9",daucus:"6-9",gladiolus:"6-9",luktart:"5-8",syren:"3-5",hyacint:"12-4",narciss:"1-4",amaryllis:"11-1",julros:"12-2",
+  julstjarna:"11-12",ljung:"8-10",vallmo:"12-4",scabiosa:"5-10",nigella:"6-8",zinnia:"7-9",kosmos:"7-9",rudbeckia:"7-9",rolleka:"6-9",kaarleksort:"8-10",allium:"5-7",
+  agapanthus:"6-9",nerine:"9-12",klocka:"5-7",digitalis:"5-7",viburnum:"4-6",salg:"1-4",mimosa:"1-3",kungsgran:"11-12",vaxblomma:"12-4",skimmia:"10-4",lovkoja:"3-6",
+  kornblomma:"6-8",prydnadskal:"9-12",veronika:"6-9",eternell:"7-9"};
+const MON=["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+function seasonMonths(id){const s=SEASON[id];if(!s)return null;const [a,b]=s.split("-").map(Number);const m=[];let x=a;for(let i=0;i<12;i++){m.push(x);if(x===b)break;x=x%12+1;}return m;}
+const seasonLabel=id=>{const s=SEASON[id];if(!s)return "året runt";const [a,b]=s.split("-").map(Number);return MON[a-1]+"–"+MON[b-1];};
+function seasonFactor(id,month){const m=seasonMonths(id);if(!m)return 1;if(m.includes(month))return 3;const p=month===1?12:month-1,n=month%12+1;return (m.includes(p)||m.includes(n))?1.6:.5;}
+const BUCKETS=[["Vinter (dec–feb)",[12,1,2]],["Vår (mar–maj)",[3,4,5]],["Sommar (jun–aug)",[6,7,8]],["Höst (sep–nov)",[9,10,11]]];
+function seasonBucket(id){const m=seasonMonths(id);if(!m)return "Året runt";let best=null,bc=-1;for(const [l,ms] of BUCKETS){const c=ms.filter(x=>m.includes(x)).length;if(c>bc){bc=c;best=l;}}return best;}
+const DRY=new Set(["brudslöja","stjärnflocka","bolltistel","hortensia","lavendel","eukalyptus","skrappa","nigella","protea","leucadendron","pampas","harsvans","martorn",
+  "limonium","eternell","rolleka","allium","craspedia","kardvadd","ljung","salg","kornblomma","gullris","scabiosa"]);
+
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+  l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da);}
+const firstWeekday=(y,mo,day,wd)=>{const d=new Date(y,mo,day);while(d.getDay()!==wd)d.setDate(d.getDate()+1);return d;};
+const HOL=[
+  {name:"alla hjärtans dag",date:y=>new Date(y,1,14),win:21,ids:["ros","tulpan","ranunkel","anemon","gerbera","germini"]},
+  {name:"påsk",date:y=>easter(y),win:28,ids:["narciss","tulpan","salg","hyacint","ranunkel","anemon","mimosa"]},
+  {name:"mors dag",date:y=>{const d=new Date(y,4,31);d.setDate(31-d.getDay());return d;},win:21,ids:["ros","pion","lisianthus","nejlika","alstroemeria","lovkoja"]},
+  {name:"studenten",date:y=>new Date(y,5,5),win:21,ids:["ros","pion","brudslöja","lisianthus","gerbera","solros"]},
+  {name:"midsommar",date:y=>firstWeekday(y,5,19,5),win:14,ids:["kornblomma","rolleka","daucus","ammi","klocka","nigella"]},
+  {name:"allhelgona",date:y=>firstWeekday(y,9,31,6),win:35,ids:["krysantemum","ljung","skimmia","buxbom","kungsgran"]},
+  {name:"jul",date:y=>new Date(y,11,24),win:35,ids:["amaryllis","julros","julstjarna","kungsgran","hyacint","skimmia","hypericum","eukalyptus","buxbom"]}
+];
+function holidays(now,maxDays){const out=[];const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  for(const h of HOL)for(const y of [now.getFullYear(),now.getFullYear()+1]){const d=h.date(y);const days=Math.round((d-t0)/864e5);if(days>=0&&days<=(maxDays??h.win)){out.push({...h,days,d});break;}}
+  return out.sort((a,b)=>a.days-b.days);}
+function holidayFor(id,now){const hs=holidays(now).filter(h=>h.ids.includes(id));return hs[0]||null;}
+
+/* ---------- bilder från Wikimedia ---------- */
+let IMG=load("bk2-img")||{}, IMG_DOWN=false;
+const imgTitle=f=>{const sp=f.species||"";const ok=sp&&!/^spp?\.$/.test(sp)&&!/hybrid/i.test(sp);return ok?[f.genus+" "+sp.replace(/\s+/g," ").trim(),f.genus]:[f.genus];};
+async function fetchJSON(url,ms=6000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal});if(r.status===404)return null;if(!r.ok)throw new Error("http");return await r.json();}finally{clearTimeout(t);}}
+const stripHTML=s=>{const d=document.createElement("div");d.innerHTML=s||"";return (d.textContent||"").replace(/\s+/g," ").trim();};
+async function fileMeta(file){
+  for(const host of ["commons.wikimedia.org","en.wikipedia.org"]){
+    try{const j=await fetchJSON(`https://${host}/w/api.php?action=query&titles=${encodeURIComponent("File:"+file)}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=720&format=json&origin=*`);
+      const p=Object.values(j?.query?.pages||{})[0];const ii=p&&p.imageinfo&&p.imageinfo[0];if(!ii)continue;
+      const md=ii.extmetadata||{};
+      return {src:ii.thumburl||ii.url,artist:stripHTML(md.Artist?.value).slice(0,70)||"okänd fotograf",license:stripHTML(md.LicenseShortName?.value)||"",page:ii.descriptionurl||`https://${host}/wiki/File:${encodeURIComponent(file)}`};
+    }catch(e){}
+  }
+  return null;
+}
+const imgPending={};
+function getImg(f){
+  if(!f||!f.genus||f.genus==="–")return Promise.resolve(null);
+  const c=IMG[f.id];
+  if(c&&c.src)return Promise.resolve(c);
+  if(c&&c.fail&&Date.now()-c.fail<864e5)return Promise.resolve(null);
+  if(imgPending[f.id])return imgPending[f.id];
+  imgPending[f.id]=(async()=>{
+    let answered=false;
+    for(const title of imgTitle(f)){
+      try{const s=await fetchJSON("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(title.replace(/ /g,"_"))+"?redirect=true");
+        answered=true;
+        if(!s||s.type==="disambiguation")continue;
+        const orig=s.originalimage?.source||s.thumbnail?.source;if(!orig)continue;
+        let file=decodeURIComponent(orig.split("/").pop());
+        if(/\/thumb\//.test(orig)){const parts=orig.split("/");file=decodeURIComponent(parts[parts.length-2]);}
+        const meta=await fileMeta(file);
+        const rec=meta?{...meta,wiki:s.content_urls?.desktop?.page||""}:{src:s.thumbnail?.source||orig,artist:"se Wikipedia",license:"",page:s.content_urls?.desktop?.page||"",wiki:s.content_urls?.desktop?.page||""};
+        IMG[f.id]=rec;store("bk2-img",IMG);return rec;
+      }catch(e){if(e&&(e.name==="TypeError"||e.name==="AbortError")){IMG_DOWN=true;setTimeout(()=>{IMG_DOWN=false;},120000);break;}}
+    }
+    if(answered){IMG[f.id]={fail:Date.now()};store("bk2-img",IMG);}
+    return null;
+  })().finally(()=>{delete imgPending[f.id];});
+  return imgPending[f.id];
+}
+const credit=r=>`<figcaption>Foto: <a href="${esc(r.page)}" target="_blank" rel="noopener">${esc(r.artist)}</a>${r.license?" · "+esc(r.license):""} · Wikimedia Commons</figcaption>`;
+const figure=r=>r?`<figure class="qimg"><img src="${esc(r.src)}" alt="" loading="lazy" referrerpolicy="no-referrer">${credit(r)}</figure>`:"";
+function prefetch(n){const pool=quizPool().filter(f=>!IMG[f.id]);for(let i=0;i<n&&pool.length;i++){getImg(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);}}
+
+/* ---------- förhörsmotorn ---------- */
+let QS=load("bk2-quiz")||{};
+const saveQS=()=>store("bk2-quiz",QS);
+const BOXW=[3,2,1.3,.8,.5];
+const TYPE_NAMES={sv2lat:"svenska → latin",lat2sv:"latin → svenska",img:"bild",fam:"familj",dry:"torkbarhet",season:"säsong"};
+const norm=s=>String(s||"").toLowerCase().replace(/[×'"’‘,.]/g," ").replace(/\s+/g," ").trim();
+const loose=s=>norm(s).normalize("NFD").replace(/[̀-ͯ]/g,"");
+const validSp=sp=>sp&&!/^spp?\.$/.test(sp)&&!/hybrid/i.test(sp);
+const fullLat=f=>validSp(f.species)?`${f.genus} ${f.species}`.replace(/\s+/g," "):f.genus;
+const latHTML=f=>validSp(f.species)?`<span class="lat">${esc(f.genus)}</span> ${f.species.includes("×")?"× ":""}<span class="lat">${esc(f.species.replace("×","").trim())}</span>`:`<span class="lat">${esc(f.genus)}</span>${/^spp?\.$/.test(f.species)?" spp.":""}`;
+const svNames=f=>f.sv.split(",").map(s=>s.trim()).filter(Boolean);
+const leaky=f=>{const g=loose(f.genus);return svNames(f).some(n=>{n=loose(n);return n===g||n.startsWith(g+" ")||g.startsWith(n);});};
+function quizPool(all){return LIB.filter(f=>f.genus&&f.genus!=="–"&&!f.acc&&(all||!S.useWeek||!(S.week||[]).length||(S.week||[]).includes(f.id)));}
+function eligible(f,level){
+  const t=[];
+  if(validSp(f.species)||!leaky(f))t.push("sv2lat");
+  if(!leaky(f))t.push("lat2sv");
+  if(!IMG_DOWN&&!(IMG[f.id]&&IMG[f.id].fail))t.push("img");
+  if(f.fam&&f.fam!=="Tillbehör")t.push("fam");
+  if(level!=="write"){if(DRY.has(f.id))t.push("dry");if(SEASON[f.id])t.push("season");}
+  return t;
+}
+const st=(id,type)=>QS[id+"|"+type];
+const typeW=(id,type)=>{const s=st(id,type);return s?BOXW[s.b]:1.6;};
+function levenshtein(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let prev=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}return prev[n];}
+function checkTyped(input,accepts){
+  const a=norm(input);if(!a)return {res:"wrong"};
+  for(const x of accepts)if(norm(x)===a)return {res:"right"};
+  let best=null,bd=99;for(const x of accepts){const d=levenshtein(loose(x),loose(input));if(d<bd){bd=d;best=x;}}
+  const lim=Math.max(1,Math.floor(loose(best||"").length/7));
+  return bd<=lim?{res:"almost",best}:{res:"wrong"};
+}
+function pickWeighted(items,wf){const ws=items.map(wf);const tot=ws.reduce((a,b)=>a+b,0);let r=Math.random()*tot;for(let i=0;i<items.length;i++){r-=ws[i];if(r<=0)return items[i];}return items[items.length-1];}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+function distract(f,n,key,ok,hard){
+  const ans=norm(key(f));const seen=new Set([ans]);
+  const cands=shuffle(quizPool(true).filter(o=>o!==f&&ok(o)));
+  const tiers=hard?[cands.filter(o=>o.fam===f.fam),cands.filter(o=>loose(key(o))[0]===loose(key(f))[0]),cands]:[cands];
+  const out=[];for(const tier of tiers)for(const o of tier){if(out.length>=n)break;const k=norm(key(o));if(!seen.has(k)){seen.add(k);out.push(o);}}
+  return out;
+}
+
+let Q={r:0,w:0,s:0,cur:null,done:false,recent:[]};
+function whyText(f,now){
+  const h=holidayFor(f.id,now);
+  if(h)return h.days===0?`Det är ${h.name} i dag – ${f.sv.split(",")[0].toLowerCase()} säljer mycket då.`:`${h.days} dagar till ${h.name}. ${f.sv.split(",")[0]} säljer mycket då.`;
+  const sm=seasonMonths(f.id);if(sm&&sm.includes(now.getMonth()+1))return `Säsong nu (${seasonLabel(f.id)}).`;
+  const ts=Object.keys(QS).filter(k=>k.startsWith(f.id+"|")).map(k=>QS[k]);
+  if(ts.some(s=>s.b===0&&s.n>0))return "Du missade den senast.";
+  if(!ts.length)return "Ny för dig.";
+  return "Repetition.";
+}
+async function newQ(){
+  const level=S.qlevel||"easy", now=new Date(), month=now.getMonth()+1;
+  let pool=quizPool(); if(pool.length<2)pool=quizPool(true);
+  const fresh=pool.filter(f=>!Q.recent.includes(f.id)); if(fresh.length>=1&&pool.length>=2)pool=fresh;
+  const listMode=S.useWeek&&(S.week||[]).length>0;
+  const weight=f=>{const types=eligible(f,level);const weak=Math.max(...types.map(t=>typeW(f.id,t)));const h=holidayFor(f.id,now);return (listMode?1:seasonFactor(f.id,month)*(h?2.5:1))*weak;};
+  for(let attempt=0;attempt<4;attempt++){
+    const f=pickWeighted(pool,weight);
+    const types=eligible(f,level);
+    const type=pickWeighted(types,t=>typeW(f.id,t)*(t==="img"?(IMG[f.id]&&IMG[f.id].src?1.5:.9):t==="fam"?.7:t==="season"?.8:1));
+    let img=null;
+    if(type==="img"){$("#q-ask").innerHTML=`<span class="hint">Hämtar bild …</span>`;img=await getImg(f);if(!img)continue;}
+    Q.cur=buildQ(f,type,level,img);Q.cur.why=whyText(f,now);Q.done=false;Q.answer=null;
+    Q.recent=[f.id,...Q.recent].slice(0,Math.max(1,Math.min(6,Math.floor(quizPool().length/2))));
+    renderQ();prefetch(2);getImg(f);return;
+  }
+  const f=pickWeighted(pool,weight);Q.cur=buildQ(f,"fam",level,null);Q.cur.why=whyText(f,now);Q.done=false;renderQ();
+}
+function buildQ(f,type,level,img){
+  const hard=level==="hard", write=level==="write"&&["sv2lat","lat2sv","img","fam"].includes(type);
+  const q={f,type,write,img,accept:[],choices:null};
+  const svMain=svNames(f)[0];
+  if(type==="sv2lat"){
+    if(leaky(f)){
+      q.label="Vilket artnamn?";q.ask=`<span class="lat" style="font-size:1.15em">${esc(f.genus)}</span> <span class="blank">______</span>`;q.sub=esc(f.fam);
+      q.accept=[f.species.replace("×","").trim(),fullLat(f)];
+      if(!write)q.choices=[f,...distract(f,3,o=>o.species.replace("×","").trim(),o=>validSp(o.species),hard)].map(o=>({html:`<span class="lat">${esc(o.species.replace("×","").trim())}</span>`,ok:o===f}));
+    }else{
+      q.label="Vad heter den botaniskt?";q.ask=esc(svMain);q.sub=hard?"":esc(f.fam);
+      q.accept=[fullLat(f),fullLat(f).replace("×","")];
+      if(!write)q.choices=[f,...distract(f,3,fullLat,o=>true,hard)].map(o=>({html:latHTML(o),ok:o===f}));
+    }
+  }else if(type==="lat2sv"){
+    q.label="Vad heter den på svenska?";q.ask=latHTML(f);q.askClass="latin";q.sub="";
+    q.accept=svNames(f);
+    if(!write)q.choices=[f,...distract(f,3,o=>svNames(o)[0],o=>!leaky(o)||true,hard)].map(o=>({html:esc(svNames(o)[0]),ok:o===f}));
+  }else if(type==="img"){
+    q.label="Vilken blomma är det här?";q.ask="";q.media=figure(img);q.sub="";
+    q.accept=[...svNames(f),fullLat(f),f.genus];
+    if(!write)q.choices=[f,...distract(f,3,o=>svNames(o)[0],o=>true,hard)].map(o=>({html:esc(svNames(o)[0])+(hard?"":` <span class="hint">· ${latHTML(o)}</span>`),ok:o===f}));
+  }else if(type==="fam"){
+    q.label="Vilken familj?";q.ask=esc(svMain);q.sub=latHTML(f);
+    q.accept=[f.fam];
+    if(!write){const fams=shuffle([...new Set(quizPool(true).map(o=>o.fam).filter(x=>x&&x!==f.fam&&x!=="Tillbehör"))]).slice(0,3);
+      q.choices=shuffle([f.fam,...fams]).map(x=>({html:esc(x),ok:x===f.fam}));}
+  }else if(type==="dry"){
+    q.label="Torka och eterneller";q.ask="Vilken av dessa torkar bäst?";q.askClass="small";q.sub="Behåller form och färg – bra till torkbinderi";
+    const others=shuffle(quizPool(true).filter(o=>!DRY.has(o.id)&&o.prof!=="T")).slice(0,3);
+    q.choices=shuffle([f,...others]).map(o=>({html:esc(svNames(o)[0])+` <span class="hint">· ${latHTML(o)}</span>`,ok:o===f}));
+  }else if(type==="season"){
+    q.label="Säsong";q.ask=`När har ${esc(svMain.toLowerCase())} säsong?`;q.askClass="small";q.sub=latHTML(f);
+    const ans=seasonBucket(f.id);const opts=shuffle([...BUCKETS.map(b=>b[0]),"Året runt"].filter(x=>x!==ans)).slice(0,3);
+    q.choices=shuffle([ans,...opts]).map(x=>({html:esc(x),ok:x===ans}));
+  }
+  if(q.choices)q.choices=shuffle(q.choices);
+  return q;
 }
 function renderQ(){
-  const {ans,opts}=Q.cur;
-  $("#q-lbl").textContent=Q.dir==="sv"?"Vad heter den botaniskt?":"Vad heter den på svenska?";
-  $("#q-ask").className="ask"+(Q.dir==="lat"?" latin":"");
-  $("#q-ask").textContent=Q.dir==="sv"?ans.sv:plainBot(ans);
-  $("#q-extra").innerHTML=Q.done?(Q.dir==="sv"?botan(ans):esc(ans.sv))+(ans.cur?`<div style="margin-top:8px">${esc(ans.cur)}</div>`:""):esc(ans.fam);
-  $("#q-opts").innerHTML=opts.map((o,i)=>{let cls="opt";if(Q.done){if(o===ans)cls+=" right";else if(i===Q.pick)cls+=" wrong";}
-    return `<button class="${cls}" data-o="${i}" ${Q.done?"disabled":""}>${Q.dir==="sv"?`<span class="lat">${esc(o.genus)}</span> <span class="lat">${esc(/^spp?\.$/.test(o.species)?"":o.species)}</span>${/^spp?\.$/.test(o.species)?" spp.":""}`:esc(o.sv)}</button>`;}).join("");
+  const q=Q.cur,f=q.f;
+  $("#q-lbl").textContent=q.label;
+  $("#q-media").innerHTML=q.media||"";
+  $("#q-ask").className="ask"+(q.askClass?" "+q.askClass:"");
+  $("#q-ask").innerHTML=q.ask;
+  $("#q-extra").innerHTML=q.sub||"";
+  $("#q-why").textContent=q.why||"";
+  $("#q-type").textContent=TYPE_NAMES[q.type];
+  if(q.choices){
+    $("#q-write").hidden=true;$("#q-opts").hidden=false;
+    $("#q-opts").innerHTML=q.choices.map((c,i)=>{let cls="opt";if(Q.done){if(c.ok)cls+=" right";else if(i===Q.answer)cls+=" wrong";}return `<button class="${cls}" data-o="${i}" ${Q.done?"disabled":""}>${c.html}</button>`;}).join("");
+  }else{
+    $("#q-opts").hidden=true;$("#q-write").hidden=false;
+    const inp=$("#q-in");inp.disabled=Q.done;if(!Q.done){inp.value="";inp.placeholder=q.type==="fam"?"t.ex. Asteraceae":q.type==="lat2sv"?"svenskt namn":q.type==="img"?"svenskt eller latinskt namn":"släkte och art";setTimeout(()=>inp.focus({preventScroll:true}),30);}
+    $("#q-submit").hidden=Q.done;$("#q-skip").hidden=Q.done;
+  }
+  const fb=$("#q-fb");
+  if(Q.done){
+    const r=Q.result;
+    const head=r.res==="right"?`<div class="fbh ok">Rätt!</div>`:r.res==="almost"?`<div class="fbh ok">Nästan rätt – stavas <b>${esc(r.best)}</b></div>`:`<div class="fbh no">Inte riktigt${q.write&&r.typed?` – du skrev ”${esc(r.typed)}”`:""}</div>`;
+    const img=IMG[f.id]&&IMG[f.id].src&&q.type!=="img"?figure(IMG[f.id]):"";
+    let extra="";
+    if(q.type==="season")extra=`<div>Säsong: <b>${seasonLabel(f.id)}</b>.${refOf(f)&&refOf(f).note?" "+esc(refOf(f).note):""}</div>`;
+    if(q.type==="dry")extra=`<div>${esc(svNames(f)[0])} går att torka och behåller formen. Häng den upp och ner, mörkt och luftigt.</div>`;
+    fb.innerHTML=`${head}<div class="fbn"><b>${esc(f.sv)}</b> · ${botan(f)}</div><div class="hint">${esc(f.fam)} · säsong ${seasonLabel(f.id)}${DRY.has(f.id)?" · torkbar":""}</div>${extra}${img}${f.cur?`<div class="sentence">${esc(f.cur)}</div>`:""}`;
+    fb.hidden=false;
+  }else fb.hidden=true;
   $("#q-next").hidden=!Q.done;
   $("#q-r").textContent=Q.r;$("#q-w").textContent=Q.w;$("#q-s").textContent=Q.s;
+  $("#q-scope").innerHTML=S.useWeek&&(S.week||[]).length?`Min lista · ${(S.week||[]).length} st <span aria-hidden="true">›</span>`:`Alla blommor · ${quizPool(true).length} st <span aria-hidden="true">›</span>`;
 }
-$("#q-opts").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b||Q.done)return;Q.pick=+b.dataset.o;Q.done=true;if(Q.cur.opts[Q.pick]===Q.cur.ans){Q.r++;Q.s++;}else{Q.w++;Q.s=0;}renderQ();});
-$("#q-next").addEventListener("click",newQ);
-[["#q-sv","sv"],["#q-lat","lat"]].forEach(([s,d])=>$(s).addEventListener("click",()=>{Q.dir=d;$("#q-sv").setAttribute("aria-pressed",d==="sv");$("#q-lat").setAttribute("aria-pressed",d==="lat");newQ();}));
+function answer(res,extra){
+  const q=Q.cur,key=q.f.id+"|"+q.type,s=QS[key]||{b:0,n:0,r:0};
+  const ok=res!=="wrong";s.n++;if(ok){s.r++;s.b=Math.min(4,s.b+1);Q.r++;Q.s++;}else{s.b=0;Q.w++;Q.s=0;}s.t=Date.now();QS[key]=s;saveQS();
+  Q.done=true;Q.result={res,...extra};renderQ();
+  setTimeout(()=>$("#q-fb").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"nearest"}),40);
+  if(Q.s===10&&S.qlevel==="easy")toast("Tio rätt i rad – testa Svår?");
+}
+$("#q-opts").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b||Q.done)return;Q.answer=+b.dataset.o;answer(Q.cur.choices[Q.answer].ok?"right":"wrong");});
+function submitTyped(){if(Q.done)return;const v=$("#q-in").value;if(!v.trim()){toast("Skriv ett svar eller tryck Vet inte");return;}const r=checkTyped(v,Q.cur.accept);answer(r.res,{best:r.best,typed:v});}
+$("#q-submit").addEventListener("click",submitTyped);
+$("#q-in").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitTyped();}});
+$("#q-skip").addEventListener("click",()=>answer("wrong",{typed:""}));
+$("#q-next").addEventListener("click",()=>{newQ();window.scrollTo({top:0});});
+document.querySelectorAll("#q-level button").forEach(b=>b.addEventListener("click",()=>{S.qlevel=b.dataset.l;save();document.querySelectorAll("#q-level button").forEach(x=>x.setAttribute("aria-pressed",x===b));newQ();}));
+
+/* urval / veckans lista */
+$("#q-scope").addEventListener("click",()=>{
+  let sel=new Set(S.week||[]);
+  openSheet(`<div class="head"><h2>Urval</h2><button class="link" data-close>Klar</button></div>
+  <div class="seg" role="group"><button id="ws-all" aria-pressed="${!S.useWeek}">Alla blommor</button><button id="ws-list" aria-pressed="${!!S.useWeek}">Min lista</button></div>
+  <p class="hint" style="margin:0 0 10px">Bocka i veckans blommor från skolan. Förhöret kör då bara dem, med extra tyngd på dem du missar.</p>
+  <input id="ws-q" placeholder="Sök" autocomplete="off">
+  <div class="hint" id="ws-n" style="margin:8px 0"></div>
+  <div class="pick-list" id="ws-l"></div>
+  <button class="btn soft" id="ws-clear" style="margin-top:10px">Töm listan</button>`);
+  const draw=()=>{const q=$("#ws-q").value.trim();$("#ws-n").textContent=`${sel.size} valda`;
+    $("#ws-l").innerHTML=quizPool(true).filter(f=>!q||matches(f,q)).map(f=>`<button data-w="${esc(f.id)}" aria-pressed="${sel.has(f.id)}"><span><b>${esc(f.sv)}</b><br><span class="hint">${botan(f)}</span></span><span class="check">${sel.has(f.id)?"✓":""}</span></button>`).join("");};
+  const commit=()=>{S.week=[...sel];if(!sel.size)S.useWeek=false;save();};
+  draw();
+  $("#ws-q").addEventListener("input",draw);
+  $("#ws-l").addEventListener("click",e=>{const b=e.target.closest("[data-w]");if(!b)return;const id=b.dataset.w;sel.has(id)?sel.delete(id):sel.add(id);if(sel.size)S.useWeek=true;commit();$("#ws-all").setAttribute("aria-pressed",!S.useWeek);$("#ws-list").setAttribute("aria-pressed",!!S.useWeek);draw();});
+  $("#ws-all").addEventListener("click",()=>{S.useWeek=false;save();$("#ws-all").setAttribute("aria-pressed",true);$("#ws-list").setAttribute("aria-pressed",false);});
+  $("#ws-list").addEventListener("click",()=>{if(!sel.size){toast("Bocka i blommor först");return;}S.useWeek=true;save();$("#ws-all").setAttribute("aria-pressed",false);$("#ws-list").setAttribute("aria-pressed",true);});
+  $("#ws-clear").addEventListener("click",()=>{sel=new Set();commit();draw();$("#ws-all").setAttribute("aria-pressed",true);$("#ws-list").setAttribute("aria-pressed",false);});
+});
+document.addEventListener("click",e=>{if(e.target.closest("[data-close]")&&S.tab==="forhor"&&Q.cur&&!Q.done){const pool=quizPool();if(!pool.includes(Q.cur.f))newQ();else renderQ();}});
+
+/* framsteg */
+$("#q-prog").addEventListener("click",()=>{
+  const now=new Date(),pool=quizPool(true);
+  const avg=f=>{const ks=Object.keys(QS).filter(k=>k.startsWith(f.id+"|"));if(!ks.length)return null;return ks.reduce((a,k)=>a+QS[k].b,0)/ks.length;};
+  const seen=pool.filter(f=>avg(f)!==null), master=seen.filter(f=>avg(f)>=3);
+  const weak=seen.filter(f=>avg(f)<2).sort((a,b)=>avg(a)-avg(b)).slice(0,6);
+  const hs=holidays(now,60);
+  const inSeason=pool.filter(f=>{const m=seasonMonths(f.id);return m&&m.includes(now.getMonth()+1);});
+  const byType=Object.keys(TYPE_NAMES).map(t=>{const ks=Object.keys(QS).filter(k=>k.endsWith("|"+t));const n=ks.reduce((a,k)=>a+QS[k].n,0),r=ks.reduce((a,k)=>a+QS[k].r,0);return {t,n,r};}).filter(x=>x.n);
+  openSheet(`<div class="head"><h2>Framsteg</h2><button class="link" data-close>Klar</button></div>
+  <div class="stack">
+    <div class="card stack" style="gap:8px"><div class="label">Behärskar</div>
+      <div class="sentence"><b>${master.length}</b> av ${pool.length} blommor sitter säkert. Du har övat på ${seen.length}.</div>
+      <div class="bar100"><span class="bgT" style="width:${pool.length?master.length/pool.length*100:0}%"></span><span class="bgJ" style="width:${pool.length?(seen.length-master.length)/pool.length*100:0}%"></span></div>
+      ${byType.length?`<div class="hint">${byType.map(x=>`${TYPE_NAMES[x.t]} ${Math.round(x.r/x.n*100)} %`).join(" · ")}</div>`:""}
+    </div>
+    ${weak.length?`<div class="card stack" style="gap:6px"><div class="label">Öva mer på</div>${weak.map(f=>`<div><b>${esc(f.sv)}</b> · ${botan(f)}</div>`).join("")}</div>`:""}
+    <div class="card stack" style="gap:6px"><div class="label">Aktuellt i butiken</div>
+      ${hs.length?hs.map(h=>`<div><b>${h.days===0?"I dag":h.days+" dagar"}</b> till ${h.name}: ${h.ids.map(id=>getF(id)).filter(Boolean).map(f=>esc(svNames(f)[0].toLowerCase())).join(", ")}</div>`).join(""):`<div class="hint">Ingen högtid de närmaste 60 dagarna.</div>`}
+      ${inSeason.length?`<div><b>Säsong nu:</b> ${inSeason.map(f=>esc(svNames(f)[0].toLowerCase())).join(", ")}</div>`:""}
+    </div>
+    <button class="btn soft" id="pr-reset" style="color:var(--rose)">Nollställ förhöret</button>
+  </div>`);
+  let armed=false;$("#pr-reset").addEventListener("click",e=>{if(!armed){armed=true;e.target.textContent="Tryck igen för att nollställa";setTimeout(()=>{armed=false;e.target.textContent="Nollställ förhöret";},3000);return;}QS={};saveQS();Q.r=Q.w=Q.s=0;closeSheet();newQ();toast("Nollställt");});
+});
 
 /* ---------- tabs ---------- */
 function switchTab(t){S.tab=t;save();document.querySelectorAll(".tabbar button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
   ["kalkyl","bibliotek","forhor"].forEach(v=>$("#v-"+v).hidden=v!==t);
-  if(t==="kalkyl")setMode(S.mode);if(t==="bibliotek")renderLib();if(t==="forhor"&&!Q.cur)newQ();window.scrollTo(0,0);}
+  if(t==="kalkyl")setMode(S.mode);if(t==="bibliotek")renderLib();if(t==="forhor"){document.querySelectorAll("#q-level button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.l===(S.qlevel||"easy")));if(!Q.cur)newQ();else renderQ();}window.scrollTo(0,0);}
 document.querySelectorAll(".tabbar button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 function rerender(){if(S.tab==="kalkyl")S.mode==="en"?renderEn():renderBukett();if(S.tab==="bibliotek")renderLib();}
 
